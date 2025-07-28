@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.c                                             :+:      :+:    :+:   */
+/*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: lagea < lagea@student.s19.be >             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/28 11:24:57 by lagea             #+#    #+#             */
-/*   Updated: 2025/07/28 11:25:25 by lagea            ###   ########.fr       */
+/*   Updated: 2025/07/28 13:27:56 by lagea            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,13 @@
 
 int main()
 {
-	std::cout << "Hello, MattDaemon!" << std::endl;
+	if (getuid() != 0) {
+		std::cout << "Please run this program as root." << std::endl;
+		return 1;
+	}
+
+	Tintin_reporter reporter;
+	reporter.Log(INFO, "Matt Daemon started successfully.");
+	
 	return 0;
 }

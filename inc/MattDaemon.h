@@ -6,7 +6,7 @@
 /*   By: lagea < lagea@student.s19.be >             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/28 11:23:10 by lagea             #+#    #+#             */
-/*   Updated: 2025/07/28 11:24:53 by lagea            ###   ########.fr       */
+/*   Updated: 2025/07/28 12:57:04 by lagea            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,9 @@
 # Includes
 #############################################################################*/
 
-#include <iostream>
+#include <iostream> // for std::cout, std::cerr
+#include <unistd.h> // for getuid()
+
+#include "Tintin_reporter.h" // for Tintin_reporter class
 
 #endif

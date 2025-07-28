@@ -10,7 +10,7 @@ NC     := \033[0m
 # Compiler & Flags
 ###############################################################################
 CC       = c++
-CFLAGS   = -Wall -Wextra -Werror -O2 -MMD -MP 
+CFLAGS   = -Wall -Wextra -Werror -O2 -MMD -MP -std=c++17
 # -MMD and -MP tell the compiler to generate .d (dependency) files for each .c
 
 ###############################################################################
@@ -20,15 +20,16 @@ TARGET   = MattDaemon
 SRC_DIR  = src
 INC_DIR  = inc
 OBJ_DIR  = build
+LOG_DIR  = /var/log/matt_daemon
 
 ###############################################################################
 # Sources / Objects
 ###############################################################################
-SRC_FILES := $(shell find $(SRC_DIR) -type f -name '*.c')
+SRC_FILES := $(shell find $(SRC_DIR) -type f -name '*.cpp')
 			
 SRCS      := $(SRC_FILES)
 
-OBJS      := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
+OBJS      := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
 
 DEPS      = $(OBJS:.o=.d)
 
@@ -48,7 +49,7 @@ $(TARGET): $(OBJS)
 ###############################################################################
 # Object File Compilation
 ###############################################################################
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@echo "$(YELLOW)Compiling $<...$(NC)"
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -I$(INC_DIR) -c $< -o $@
