@@ -6,7 +6,7 @@
 /*   By: lagea < lagea@student.s19.be >             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/28 11:24:57 by lagea             #+#    #+#             */
-/*   Updated: 2025/07/28 14:51:55 by lagea            ###   ########.fr       */
+/*   Updated: 2025/07/28 17:01:27 by lagea            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,18 +14,27 @@
 
 int main()
 {
+	Tintin_reporter reporter;
+
+	fs::path lockFilePath = fs::path(LOCK_PATH);
 	if (getuid() != 0) {
 		std::cout << "Please run this program as root." << std::endl;
-		return 1;
+		return EXIT_FAILURE;
 	}
 
+	reporter.Log(INFO, "Matt Daemon started.");
 	
+	if (fs::exists(lockFilePath)) {
+		std::cerr << "Can't run the deamon, /var/lock/matt_daemon.lock exists." << std::endl;
+		reporter.Log(ERROR, "File locked, daemon already running.");
+		return EXIT_FAILURE;
+	}
+
 	CreateDaemon();
+
+	CreateLockFile(lockFilePath);
 	
-	Tintin_reporter reporter;
-	reporter.Log(INFO, "Matt Daemon started successfully.");
-	
-	DaemonLoop(reporter);
+	DaemonLoop();
 
 	return 0;
 }
