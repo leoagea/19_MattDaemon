@@ -6,17 +6,19 @@
 /*   By: lagea < lagea@student.s19.be >             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/28 14:47:41 by lagea             #+#    #+#             */
-/*   Updated: 2025/07/28 17:00:13 by lagea            ###   ########.fr       */
+/*   Updated: 2025/07/28 21:48:35 by lagea            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../inc/MattDaemon.h"
 
+fd_t listen_fd;
+struct sigaction sa;
+
 void TermHandler(int signum)
 {
 	(void)signum; // Unused parameter
 
-	Tintin_reporter reporter;
 	reporter.Log(INFO, "Received SIGKILL signal, shutting down.");
 
 	remove(LOCK_PATH);
@@ -93,14 +95,53 @@ void CreateLockFile(fs::path &lockpath)
 	close(fd);
 }
 
-void DaemonLoop()
+void InitSignalHandler()
 {
-	struct sigaction sa = {};
 	sa.sa_handler = TermHandler;
 	sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;                         // no SA_RESTART: pause() will exit
     sigaction(SIGTERM, &sa, nullptr);
+}
 
+void InitSocket()
+{
+	listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (listen_fd < 0) {
+		std::cerr << "Failed to create socket." << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+	struct sockaddr_in server_addr;
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	server_addr.sin_port = htons(4242);
+
+	if (bind(listen_fd, reinterpret_cast<sockaddr *>(&server_addr), sizeof(server_addr)) < 0) {
+		std::cerr << "Failed to bind socket." << std::endl;
+		close(listen_fd);
+		exit(EXIT_FAILURE);
+	}
+
+	if (listen(listen_fd, 3) < 0) {
+		std::cerr << "Failed to listen on socket." << std::endl;
+		close(listen_fd);
+		exit(EXIT_FAILURE);
+	}
+
+	if (fcntl(listen_fd, F_SETFL, O_NONBLOCK) < 0) {
+		std::cerr << "Failed to set socket to non-blocking mode." << std::endl;
+		close(listen_fd);
+		exit(EXIT_FAILURE);
+	}
+
+	reporter.Log(INFO, "Socket initialized and listening on port 4242.");
+}
+
+void DaemonLoop()
+{
+	InitSignalHandler();
+	InitSocket();
+	
 	while (true) {
 		
 		// Here you can implement the main functionality of your daemon

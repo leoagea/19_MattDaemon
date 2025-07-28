@@ -6,16 +6,16 @@
 /*   By: lagea < lagea@student.s19.be >             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/28 11:24:57 by lagea             #+#    #+#             */
-/*   Updated: 2025/07/28 17:01:27 by lagea            ###   ########.fr       */
+/*   Updated: 2025/07/28 21:24:16 by lagea            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../inc/MattDaemon.h"
 
+Tintin_reporter reporter;
+
 int main()
 {
-	Tintin_reporter reporter;
-
 	fs::path lockFilePath = fs::path(LOCK_PATH);
 	if (getuid() != 0) {
 		std::cout << "Please run this program as root." << std::endl;
