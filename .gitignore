@@ -36,6 +36,7 @@
 *.exe
 *.out
 *.app
+MattDaemon
 
 # debug information files
 *.dwo
