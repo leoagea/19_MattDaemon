@@ -6,7 +6,7 @@
 /*   By: lagea < lagea@student.s19.be >             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/28 11:23:10 by lagea             #+#    #+#             */
-/*   Updated: 2025/07/28 21:48:31 by lagea            ###   ########.fr       */
+/*   Updated: 2025/07/28 22:44:22 by lagea            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,17 +17,21 @@
 # Includes
 #############################################################################*/
 
-#include <iostream> // for std::cout, std::cerr
-#include <unistd.h> // for getuid()
-#include <signal.h> // for signal handling
-#include <fcntl.h> // for open, dup2
-#include <filesystem> // for std::filesystem
-#include <sys/socket.h> // for socket, bind, listen
-#include <sys/stat.h> // for umask
-#include <sys/file.h> // for flock
-#include <netinet/in.h> // for sockaddr_in, INADDR_LOOPBACK
+#include <iostream> // cout, cerr
+#include <unistd.h> // getuid()
+#include <signal.h> // signal handling
+#include <fcntl.h> // open, dup2
+#include <filesystem> // filesystem
+#include <array> // array
+#include <algorithm> // max, find
+#include <errno.h> // errno
+#include <sys/select.h> // select
+#include <sys/socket.h> // socket, bind, listen
+#include <sys/stat.h> // umask
+#include <sys/file.h> // flock
+#include <netinet/in.h> // sockaddr_in, INADDR_LOOPBACK
 
-#include "Tintin_reporter.h" // for Tintin_reporter class
+#include "Tintin_reporter.h" // Tintin_reporter class
 
 /*#############################################################################
 # Defines
@@ -45,9 +49,11 @@ typedef int fd_t;
 # Global Variables
 #############################################################################*/
 
-extern Tintin_reporter reporter;
-extern struct sigaction sa;
-extern fd_t listen_fd;
+extern bool g_stop;
+extern fd_t g_listen_fd;
+extern struct sigaction g_sa;
+extern Tintin_reporter g_reporter;
+extern std::array<int, 3> g_client_fds;
 
 /*#############################################################################
 # Daemon.cpp
@@ -58,5 +64,8 @@ void CreateLockFile(fs::path &);
 void InitSignalHandler();
 void InitSocket();
 void DaemonLoop();
+void ExitHandler();
+int AcceptClient();
+int HandleClient(int , fd_set *);
 
 #endif

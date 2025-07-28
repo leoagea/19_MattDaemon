@@ -9,8 +9,8 @@ NC     := \033[0m
 ###############################################################################
 # Compiler & Flags
 ###############################################################################
-CC       = c++
-CFLAGS   = -Wall -Wextra -Werror -O2 -MMD -MP -std=c++17
+CXX       = g++
+CXXFLAGS  = -Wall -Wextra -Werror -O2 -MMD -MP -std=c++17
 # -MMD and -MP tell the compiler to generate .d (dependency) files for each .c
 
 ###############################################################################
@@ -43,7 +43,7 @@ all: $(TARGET)
 ###############################################################################
 $(TARGET): $(OBJS)
 	@echo "$(BLUE)Linking $(TARGET)...$(NC)"
-	@$(CC) $(CFLAGS) -I$(INC_DIR) -o $@ $(OBJS)
+	@$(CXX) $(CXXFLAGS) -I$(INC_DIR) -o $@ $(OBJS)
 	@echo "$(GREEN)Build complete!$(NC)"
 
 ###############################################################################
@@ -52,7 +52,7 @@ $(TARGET): $(OBJS)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@echo "$(YELLOW)Compiling $<...$(NC)"
 	@mkdir -p $(dir $@)
-	@$(CC) $(CFLAGS) -I$(INC_DIR) -c $< -o $@
+	@$(CXX) $(CXXFLAGS) -I$(INC_DIR) -c $< -o $@
 
 ###############################################################################
 # Cleanup
