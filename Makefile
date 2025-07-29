@@ -21,6 +21,7 @@ SRC_DIR  = src
 INC_DIR  = inc
 OBJ_DIR  = build
 LOG_DIR  = /var/log/matt_daemon
+GRAPHIC_DIR = graphic_client
 
 ###############################################################################
 # Sources / Objects
@@ -53,6 +54,12 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@echo "$(YELLOW)Compiling $<...$(NC)"
 	@mkdir -p $(dir $@)
 	@$(CXX) $(CXXFLAGS) -I$(INC_DIR) -c $< -o $@
+
+graph:
+	@echo "$(BLUE)Building GUI client...$(NC)"
+	@mkdir -p $(GRAPHIC_DIR)/build
+	@cd $(GRAPHIC_DIR)/build && cmake .. && make
+	@echo "$(GREEN)GUI client built! Run with: ./$(GRAPHIC_DIR)/build/mattd_gui$(NC)"
 
 ###############################################################################
 # Cleanup

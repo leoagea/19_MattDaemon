@@ -40,3 +40,6 @@ MattDaemon
 
 # debug information files
 *.dwo
+
+# CMake files
+build/
