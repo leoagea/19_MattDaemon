@@ -6,7 +6,7 @@
 /*   By: lagea < lagea@student.s19.be >             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/28 12:11:13 by lagea             #+#    #+#             */
-/*   Updated: 2025/07/28 13:27:15 by lagea            ###   ########.fr       */
+/*   Updated: 2025/07/29 11:20:00 by lagea            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,6 @@
 
 Tintin_reporter::Tintin_reporter() : _path(fs::path(LOG_DIR) / LOG_FILE)
 {
-	std::cout << "Log file path: " << _path << std::endl;
 	CreateLogFile();
 	OpenLogFile();
 }
@@ -25,13 +24,28 @@ Tintin_reporter::~Tintin_reporter()
 		_logfile.close();
 }
 
+Tintin_reporter::Tintin_reporter(const Tintin_reporter &other) : _path(other._path)
+{
+	CreateLogFile();
+	OpenLogFile();
+}
+
+Tintin_reporter& Tintin_reporter::operator=(const Tintin_reporter &other)
+{
+	if (this != &other) {
+		_path = other._path;
+		if (_logfile.is_open())
+			_logfile.close();
+		CreateLogFile();
+		OpenLogFile();
+	}
+	return *this;
+}
+
 void Tintin_reporter::CreateLogFile()
 {
-	if (!fs::exists(_path.parent_path())){
+	if (!fs::exists(_path.parent_path()))
 		fs::create_directories(_path.parent_path());
-		std::cout << "Log file created successfully: " << _path << std::endl;
-	}
-
 }
 
 void Tintin_reporter::OpenLogFile()
@@ -42,7 +56,6 @@ void Tintin_reporter::OpenLogFile()
 			std::cerr << "Error opening log file: " << _path << std::endl;
 			exit(EXIT_FAILURE);
 		}
-		std::cout << "Log opened successfully: " << _path << std::endl;
 	}
 }
 
@@ -53,7 +66,6 @@ void Tintin_reporter::Log(LogLevel level,const std::string &message)
 		return;
 	}
 
-	//Retrieve timestamp with hour,minutes,seconds and format it
 	auto now = chrono::system_clock::now();
 	auto in_time_t = chrono::system_clock::to_time_t(now);
 	std::tm buf;
@@ -67,7 +79,6 @@ const char* Tintin_reporter::LogLevelToString(LogLevel level) noexcept
 {
 	switch (level) {
 		case INFO: return "[INFO]";
-		case WARNING: return "[WARNING]";
 		case ERROR: return "[ERROR]";
 		default: return "[UNKNOWN]";
 	}

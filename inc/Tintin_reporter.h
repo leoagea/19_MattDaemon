@@ -6,7 +6,7 @@
 /*   By: lagea < lagea@student.s19.be >             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/28 12:01:09 by lagea             #+#    #+#             */
-/*   Updated: 2025/07/28 13:25:31 by lagea            ###   ########.fr       */
+/*   Updated: 2025/07/29 10:58:50 by lagea            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,8 +42,8 @@ class Tintin_reporter
 	public:
 		Tintin_reporter();
 		~Tintin_reporter();
-		Tintin_reporter(const Tintin_reporter &) = delete; // Disable copy constructor
-		Tintin_reporter& operator=(const Tintin_reporter &) = delete; // Disable copy assignment operator
+		Tintin_reporter(const Tintin_reporter &);
+		Tintin_reporter& operator=(const Tintin_reporter &);
 
 		void Log(LogLevel ,const std::string &);
 };

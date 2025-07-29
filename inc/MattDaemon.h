@@ -6,7 +6,7 @@
 /*   By: lagea < lagea@student.s19.be >             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/28 11:23:10 by lagea             #+#    #+#             */
-/*   Updated: 2025/07/28 22:44:22 by lagea            ###   ########.fr       */
+/*   Updated: 2025/07/29 11:09:57 by lagea            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@
 #include <array> // array
 #include <algorithm> // max, find
 #include <errno.h> // errno
+#include <sstream> // stringstream
 #include <sys/select.h> // select
 #include <sys/socket.h> // socket, bind, listen
 #include <sys/stat.h> // umask

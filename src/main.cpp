@@ -6,7 +6,7 @@
 /*   By: lagea < lagea@student.s19.be >             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/28 11:24:57 by lagea             #+#    #+#             */
-/*   Updated: 2025/07/28 21:55:30 by lagea            ###   ########.fr       */
+/*   Updated: 2025/07/29 11:17:24 by lagea            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,13 +27,13 @@ int main()
 	if (fs::exists(lockFilePath)) {
 		std::cerr << "Can't run the deamon, /var/lock/matt_daemon.lock exists." << std::endl;
 		g_reporter.Log(ERROR, "File locked, daemon already running.");
+		g_reporter.Log(INFO, "Quitting.");
 		return EXIT_FAILURE;
 	}
 
+	InitSocket();
 	CreateDaemon();
-
 	CreateLockFile(lockFilePath);
-	
 	DaemonLoop();
 
 	return 0;

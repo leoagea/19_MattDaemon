@@ -6,7 +6,7 @@
 /*   By: lagea < lagea@student.s19.be >             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/28 14:47:41 by lagea             #+#    #+#             */
-/*   Updated: 2025/07/28 22:57:34 by lagea            ###   ########.fr       */
+/*   Updated: 2025/07/29 11:15:43 by lagea            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,34 +19,27 @@ std::array<int, 3> g_client_fds = {-1, -1, -1};
 
 void TermHandler(int signum)
 {
-	(void)signum; // Unused parameter
+	(void)signum;
 
 	g_reporter.Log(INFO, "Received SIGKILL signal, shutting down.");
-
-	remove(LOCK_PATH);
-	close(g_listen_fd);
-
-	for (int &fd : g_client_fds) {
-		if (fd != -1) 
-			close(fd);
-	}
+	ExitHandler();
 
 	exit(EXIT_SUCCESS);
 }
 
 void CreateDaemon()
 {
+	g_reporter.Log(INFO, "Entering daemon mode...");
+
 	pid_t pid = fork();
 	if (pid < 0) {
-		std::cerr << "Fork failed." << std::endl;
+		g_reporter.Log(ERROR, "Failed to fork the daemon process.");
 		exit(EXIT_FAILURE);
-	} else if (pid > 0) {
-		std::cout << "First fork successful, parent process exiting." << std::endl;
+	} else if (pid > 0)
 		exit(EXIT_SUCCESS); // Parent process exits
-	}
 
 	if (setsid() < 0) {
-		std::cerr << "Failed to create a new session." << std::endl;
+		g_reporter.Log(ERROR, "Failed to create a new session.");
 		exit(EXIT_FAILURE);
 	}
 
@@ -55,29 +48,34 @@ void CreateDaemon()
 	
 	pid = fork();
 	if (pid < 0) {
-		std::cerr << "Fork failed." << std::endl;
+		g_reporter.Log(ERROR, "Failed to fork the daemon process.");
 		exit(EXIT_FAILURE);
-	} else if (pid > 0) {
-		std::cout << "Second fork successful, parent process exiting." << std::endl;
+	} else if (pid > 0)
 		exit(EXIT_SUCCESS); // Parent process exits
-	}
 
-	umask(0); // Change file mode mask to 0
-	if (chdir("/") == -1) { // Change working directory to root{
-		std::cerr << "Failed to change working directory to root." << std::endl;
+	umask(0);
+	if (chdir("/") == -1) { 
+		g_reporter.Log(ERROR, "Failed to change working directory to root.");
 		exit(EXIT_FAILURE);
 	}
 
-		// 1. Close the inherited descriptors
+	// Close the inherited descriptors
 	close(STDIN_FILENO);
 	close(STDOUT_FILENO);
 	close(STDERR_FILENO);
 
-	// 2. Re-open them all on /dev/null
-	int fd = open("/dev/null", O_RDWR);   // returns lowest unused number → 0
-	dup2(fd, STDOUT_FILENO);              // 1
-	dup2(fd, STDERR_FILENO);              // 2
-	if (fd > 2) close(fd);                // keep things tidy
+	// Re-open them all on /dev/null
+	int fd = open("/dev/null", O_RDWR);
+	dup2(fd, STDOUT_FILENO);
+	dup2(fd, STDERR_FILENO);
+	if (fd > 2) 
+		close(fd);
+
+	pid_t daemon_pid = getpid();
+	std::stringstream ss;
+	ss << "Daemon mode activated. PID: ";
+	ss << daemon_pid;
+	g_reporter.Log(INFO, ss.str());
 }
 
 void CreateLockFile(fs::path &lockpath)
@@ -89,14 +87,14 @@ void CreateLockFile(fs::path &lockpath)
 	if (!fs::exists(lockpath)){
 		lockfile.open(lockpath);
 		if (!lockfile.is_open()){
-			std::cerr << "Failed to create lock file." << std::endl;
+			g_reporter.Log(ERROR, "Failed to create lock file.");
 			exit(EXIT_FAILURE);
 		}
 	}
 
 	int fd = open(lockpath.c_str(), O_RDWR|O_CREAT, 0666);
 	if (flock(fd, LOCK_EX | LOCK_NB) == -1){
-		std::cerr << "Failed to locked file." << std::endl;
+		g_reporter.Log(ERROR, "Failed to lock file.");
 		exit(EXIT_FAILURE);
 	}
 
@@ -115,7 +113,7 @@ void InitSocket()
 {
 	g_listen_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (g_listen_fd < 0) {
-		std::cerr << "Failed to create socket." << std::endl;
+		g_reporter.Log(ERROR, "Failed to create socket.");
 		exit(EXIT_FAILURE);
 	}
 
@@ -125,24 +123,24 @@ void InitSocket()
 	server_addr.sin_port = htons(4242);
 
 	if (bind(g_listen_fd, reinterpret_cast<sockaddr *>(&server_addr), sizeof(server_addr)) < 0) {
-		std::cerr << "Failed to bind socket." << std::endl;
+		g_reporter.Log(ERROR, "Failed to bind socket.");
 		close(g_listen_fd);
 		exit(EXIT_FAILURE);
 	}
 
 	if (listen(g_listen_fd, 3) < 0) {
-		std::cerr << "Failed to listen on socket." << std::endl;
+		g_reporter.Log(ERROR, "Failed to listen on socket.");
 		close(g_listen_fd);
 		exit(EXIT_FAILURE);
 	}
 
 	if (fcntl(g_listen_fd, F_SETFL, O_NONBLOCK) < 0) {
-		std::cerr << "Failed to set socket to non-blocking mode." << std::endl;
+		g_reporter.Log(ERROR, "Failed to set socket to non-blocking mode.");
 		close(g_listen_fd);
 		exit(EXIT_FAILURE);
 	}
 
-	g_reporter.Log(INFO, "Socket initialized and listening on port 4242.");
+	g_reporter.Log(INFO, "Server created on port 4242.");
 }
 
 int AcceptNewClient()
@@ -188,7 +186,6 @@ int HandleClient(int client_fd, fd_set *rset)
 void DaemonLoop()
 {
 	InitSignalHandler();
-	InitSocket();
 	
 	while (!g_stop) {
 		fd_set rset;  
@@ -223,7 +220,7 @@ void DaemonLoop()
 
 void ExitHandler()
 {
-	g_reporter.Log(INFO, "Quitting daemon...");
+	g_reporter.Log(INFO, "Quitting.");
 	remove(LOCK_PATH);
 	close(g_listen_fd);
 
