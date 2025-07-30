@@ -10,4 +10,4 @@
 ## Graphic Client 
 	IMGui as graphic lib
 	Cmd: Start the program, stop, create server, create daemon
-	kill the daemon, remote shell ?, get log ?
+	remote shell ?

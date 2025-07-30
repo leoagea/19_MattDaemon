@@ -6,7 +6,7 @@
 /*   By: lagea < lagea@student.s19.be >             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/28 14:47:41 by lagea             #+#    #+#             */
-/*   Updated: 2025/07/29 11:15:43 by lagea            ###   ########.fr       */
+/*   Updated: 2025/07/30 11:18:24 by lagea            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,6 +90,7 @@ void CreateLockFile(fs::path &lockpath)
 			g_reporter.Log(ERROR, "Failed to create lock file.");
 			exit(EXIT_FAILURE);
 		}
+		lockfile << getpid() << std::endl;
 	}
 
 	int fd = open(lockpath.c_str(), O_RDWR|O_CREAT, 0666);
