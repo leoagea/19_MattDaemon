@@ -8,6 +8,4 @@
 	Store the messages into a queue, and log the message in order of the queue
 
 ## Graphic Client 
-	IMGui as graphic lib
-	Cmd: Start the program, stop, create server, create daemon
 	remote shell ?

@@ -6,7 +6,7 @@
 /*   By: lagea < lagea@student.s19.be >             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/30 10:52:41 by lagea             #+#    #+#             */
-/*   Updated: 2025/07/30 13:44:14 by lagea            ###   ########.fr       */
+/*   Updated: 2025/07/30 16:46:03 by lagea            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,6 +44,10 @@ int main()
 	/* 4. Main loop */
 	bool show_demo = false;
 	bool show_log = false;
+	bool show_terminal = false;
+	bool daemon_running = isDaemonRunning();
+	static char input_buffer[256] = "";
+
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
@@ -55,14 +59,77 @@ int main()
 		/* ---- Your widgets here ---- */
 		if (show_demo) ImGui::ShowDemoWindow(&show_demo);
 		ImGui::Begin("Matt Daemon Panel");
-		ImGui::Text("Connected: false");
-		ImGui::Button("Connect"); 
 		
-		if (ImGui::Button("Kill Daemon")) killDaemon();
+		// Daemon control buttons
+		if (ImGui::Button("Start Daemon") && !daemon_running) {
+			std::string command = std::string(DAEMON_EXEC_PATH) + " &";
+			if (system(command.c_str()) == 0) {
+				daemon_running = true;
+			} else {
+				std::cerr << "Failed to start daemon\n";
+			}
+		}
+		
+		ImGui::SameLine();
+		std::string daemon_status = daemon_running ? "Running" : "Not Running";
+		ImGui::Text("| %s", daemon_status.c_str());
+
+		if (ImGui::Button("Kill Daemon") && daemon_running) {
+			if (killDaemon() == SUCCESS)
+				daemon_running = false;
+		}
 		std::string status = getDaemonStatus();
 		if (!status.empty()) ImGui::Text("%s", status.c_str());
 
-		ImGui::NewLine();
+		// Connection status
+		if (ImGui::Button(isConnected() ? "Disconnect" : "Connect")) {
+			if (isConnected())
+				disconnectFromDaemon();
+			else
+				connectToDaemon();
+		}
+		
+		ImGui::SameLine();
+		std::string conn_status = getConnectionStatus();
+		if (!conn_status.empty()) {
+			ImGui::Text("| %s", conn_status.c_str());
+		}
+		
+		ImGui::Separator();
+		
+		// Terminal Section
+		if (ImGui::Button("Show Terminal")) show_terminal = !show_terminal;
+		
+		if (show_terminal) {
+			ImGui::Begin("Daemon Terminal", &show_terminal);
+			
+			ImGui::Text("Send command to daemon:");
+			if (ImGui::InputText("##input", input_buffer, sizeof(input_buffer), ImGuiInputTextFlags_EnterReturnsTrue)) {
+				if (isConnected() && strlen(input_buffer) > 0) {
+					if (sendMessage(std::string(input_buffer), daemon_running)) {
+						input_buffer[0] = '\0';
+					}
+				}
+			}
+			
+			ImGui::SameLine();
+			if (ImGui::Button("Send") && isConnected() && strlen(input_buffer) > 0) {
+				if (sendMessage(std::string(input_buffer), daemon_running)) {
+					input_buffer[0] = '\0';
+				}
+			}
+			
+			// Connection status in terminal window
+			if (!isConnected()) {
+				ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Not connected to daemon");
+			} else {
+				ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Connected - Type commands above");
+			}
+			
+			ImGui::End();
+		}
+
+		// Log Buttons
 		if (ImGui::Button("Clear Log")) clearLog();
 		ImGui::SameLine();
 		if (ImGui::Button("Show Log")) show_log = !show_log;
@@ -72,7 +139,7 @@ int main()
 			ImGui::EndChild();
 		}
 		
-		ImGui::Checkbox("Show Demo Window", &show_demo);
+		// ImGui::Checkbox("Show Demo Window", &show_demo);
 		if (ImGui::Button("Quit Window")) glfwSetWindowShouldClose(window, true);
 		ImGui::End();
 		/* --------------------------- */
