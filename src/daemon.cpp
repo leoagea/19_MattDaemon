@@ -6,7 +6,7 @@
 /*   By: lagea < lagea@student.s19.be >             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/28 14:47:41 by lagea             #+#    #+#             */
-/*   Updated: 2025/07/31 14:32:23 by lagea            ###   ########.fr       */
+/*   Updated: 2025/07/31 14:35:04 by lagea            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -149,69 +149,6 @@ void InitSocket()
 	g_reporter.Log(INFO, "Server created on port 4242.");
 }
 
-int AcceptNewClient()
-{
-	int cli = accept(g_listen_fd, nullptr, nullptr);
-	if (cli == -1) return 0;
-
-	auto free_slot = std::find(g_client_fds.begin(), g_client_fds.end(), -1);
-	if (free_slot == g_client_fds.end()) {
-		close(cli);  // >3 → reject
-	} else {
-		*free_slot = cli;
-		fcntl(cli, F_SETFL, O_NONBLOCK);
-	}
-	return 1;
-}
-
-int HandleClient(int client_fd, fd_set *rset)
-{
-	if (FD_ISSET(client_fd, rset)) {
-		char buf[1024];
-		ssize_t r = recv(client_fd, buf, sizeof(buf) - 1, 0);
-		if (r <= 0) {
-			auto session_it = std::find_if(g_shell_sessions.begin(), g_shell_sessions.end(),
-				[client_fd](const t_shell_session& s) { return s.client_fd == client_fd; });
-			if (session_it != g_shell_sessions.end())
-				CloseShellSession(*session_it);
-			
-			auto client_it = std::find(g_client_fds.begin(), g_client_fds.end(), client_fd);
-			if (client_it != g_client_fds.end())
-				*client_it = -1;
-			
-			close(client_fd);
-			client_fd = -1; 
-			return 0; 
-		}
-
-		buf[r] = '\0';
-		std::string msg(buf);
-		msg.erase(msg.find_last_not_of("\r\n") + 1);
-
-		if (msg == "quit") {
-			g_reporter.Log(INFO, "Request quit.");
-			g_stop = true;
-		} else if (msg == "shell") {
-			HandleShellCommand(client_fd);
-		} else {
-			auto session_it = std::find_if(g_shell_sessions.begin(), g_shell_sessions.end(),
-				[client_fd](const t_shell_session& s) { return s.client_fd == client_fd; });
-			
-			if (session_it != g_shell_sessions.end()){
-				std::cout << "DEBUG: Sending to shell: " << msg << std::endl;  // Add this
-				std::string cmd = std::string(buf, r);
-				if (cmd.back() != '\n') cmd += '\n';
-				size_t unused = write(session_it->pty_fd, cmd.c_str(), cmd.size());(void) unused;
-			}
-			else{
-				std::cout << "DEBUG: No shell session found, logging as message" << std::endl;  // Add this
-				g_reporter.Log(INFO,  "User input: " + msg);
-			}
-		}
-	}
-	return 1;
-}
-
 void DaemonLoop()
 {
 	InitSignalHandler();
@@ -271,85 +208,4 @@ void ExitHandler()
 	}
 
 	exit(EXIT_SUCCESS);
-}
-
-void HandleShellCommand(fd_t client_fd)
-{
-	int master_fd, slave_fd;
-	
- 	auto free_slot = std::find_if(g_shell_sessions.begin(), g_shell_sessions.end(), [](const t_shell_session& session) {
-			return session.client_fd == -1 && session.pty_fd == -1 && session.shell_pid == -1;
-	});
-	if (free_slot == g_shell_sessions.end())
-		return ; // No free shell session available
-
-	if (openpty(&master_fd, &slave_fd, nullptr, nullptr, nullptr) < 0) {
-		g_reporter.Log(ERROR, "Failed to open pseudo-terminal.");
-		return;
-	}
-
-	// Configure terminal attributes to disable echo
-	struct termios tty;
-	if (tcgetattr(slave_fd, &tty) == 0) {
-		tty.c_lflag &= ~ECHO;      // Disable echo
-		tty.c_lflag &= ~ECHOE;     // Disable erase echo
-		tty.c_lflag &= ~ECHOK;     // Disable kill echo
-		tty.c_lflag &= ~ECHONL;    // Disable newline echo
-		tcsetattr(slave_fd, TCSANOW, &tty);
-	}
-	
-	pid_t shell_pid = fork();
-	if (shell_pid < 0) {
-		g_reporter.Log(ERROR, "Failed to fork shell process.");
-		close(master_fd);
-		close(slave_fd);
-		return;
-	} else if (shell_pid == 0) {
-		close(master_fd);
-		
-		setsid();
-		
-		dup2(slave_fd, STDIN_FILENO);
-		dup2(slave_fd, STDOUT_FILENO);
-		dup2(slave_fd, STDERR_FILENO);
-		close(slave_fd);
-
-		execlp("bash", "bash", nullptr);
-		exit(EXIT_FAILURE);
-	}
-
-	close(slave_fd);
-	*free_slot = {client_fd, master_fd, shell_pid};
-	fcntl(master_fd, F_SETFL, O_NONBLOCK);
-	g_reporter.Log(INFO, "Shell session created with PID: " + std::to_string(shell_pid));
-}
-
-void CloseShellSession(t_shell_session &session)
-{
-	if (session.pty_fd != -1)
-		close(session.pty_fd);
-	if (session.shell_pid != -1)
-		kill(session.shell_pid, SIGHUP);
-
-	waitpid(session.shell_pid, nullptr, 0);
-	
-	const std::string msg = "Shell session with PID " + std::to_string(session.shell_pid) + " closed.";
-	g_reporter.Log(INFO, msg);
-	session = {-1, -1, -1};
-}
-
-void HandleShellIO(t_shell_session &session, fd_set *rset)
-{
-	char buffer[1024];
-	
-	if (FD_ISSET(session.pty_fd, rset)) {
-		ssize_t bytes = read(session.pty_fd, buffer, sizeof(buffer) - 1);
-		if (bytes > 0) {
-			buffer[bytes] = '\0';
-			send(session.client_fd, buffer, bytes, 0);
-		} else if (bytes == 0 || (bytes < 0 && errno != EAGAIN)) {
-			// Shell terminated
-			CloseShellSession(session);
-		}
-	}
 }
