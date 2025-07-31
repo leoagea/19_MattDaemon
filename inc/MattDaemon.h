@@ -6,7 +6,7 @@
 /*   By: lagea < lagea@student.s19.be >             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/28 11:23:10 by lagea             #+#    #+#             */
-/*   Updated: 2025/07/29 11:09:57 by lagea            ###   ########.fr       */
+/*   Updated: 2025/07/31 14:28:54 by lagea            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,9 @@
 #include <algorithm> // max, find
 #include <errno.h> // errno
 #include <sstream> // stringstream
+#include <pty.h> // openpty
+#include <termio.h> // termios
+#include <sys/wait.h> // waitpid
 #include <sys/select.h> // select
 #include <sys/socket.h> // socket, bind, listen
 #include <sys/stat.h> // umask
@@ -41,10 +44,20 @@
 #define LOCK_PATH "/var/lock/matt_daemon.lock"
 
 /*#############################################################################
-# Global Variables
+# Typedef Variables
 #############################################################################*/
 
 typedef int fd_t;
+
+/*#############################################################################
+# Struct 
+#############################################################################*/
+
+typedef struct {
+	fd_t client_fd;
+	fd_t pty_fd;
+	pid_t shell_pid;
+}		t_shell_session;
 
 /*#############################################################################
 # Global Variables
@@ -55,6 +68,7 @@ extern fd_t g_listen_fd;
 extern struct sigaction g_sa;
 extern Tintin_reporter g_reporter;
 extern std::array<int, 3> g_client_fds;
+extern std::array<t_shell_session, 3> g_shell_sessions;
 
 /*#############################################################################
 # Daemon.cpp
@@ -66,7 +80,10 @@ void InitSignalHandler();
 void InitSocket();
 void DaemonLoop();
 void ExitHandler();
-int AcceptClient();
+int AcceptNewClient();
 int HandleClient(int , fd_set *);
+void HandleShellCommand(fd_t);
+void CloseShellSession(t_shell_session &);
+void HandleShellIO(t_shell_session &, fd_set *);
 
 #endif

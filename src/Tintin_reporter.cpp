@@ -6,7 +6,7 @@
 /*   By: lagea < lagea@student.s19.be >             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/28 12:11:13 by lagea             #+#    #+#             */
-/*   Updated: 2025/07/29 11:20:00 by lagea            ###   ########.fr       */
+/*   Updated: 2025/07/30 17:24:32 by lagea            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,6 +54,8 @@ void Tintin_reporter::OpenLogFile()
 		_logfile.open(_path, std::ios::out | std::ios::app);
 		if (!_logfile.is_open()) {
 			std::cerr << "Error opening log file: " << _path << std::endl;
+			if (getuid() != 0)
+				std::cout << "Please run this program as root." << std::endl;
 			exit(EXIT_FAILURE);
 		}
 	}
